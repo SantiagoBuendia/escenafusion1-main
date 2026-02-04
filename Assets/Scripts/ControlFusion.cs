@@ -24,6 +24,7 @@ public class ControlFusion : MonoBehaviour
     private bool estufaEncendida = false;
     private bool hayHieloEnOlla = false;
     private bool transicionHieloAguaCompleta = false;
+    private bool peticionEnCurso = false;
 
     private float temperatura = 0f;
 
@@ -60,7 +61,7 @@ public class ControlFusion : MonoBehaviour
         if (!estufaEncendida)
             return;
 
-        // ⬇️ MODIFICACIÓN CONTROLADA (sin borrar nada):
+
         // Se limita la temperatura a 150 °C
         temperatura += Time.deltaTime * velocidadAumentoTemp;
         temperatura = Mathf.Min(temperatura, TEMPERATURA_MAXIMA);
@@ -77,6 +78,13 @@ public class ControlFusion : MonoBehaviour
 
             if (hielo.transform.localScale.x <= 0.05f && !transicionHieloAguaCompleta)
             {
+                GestorSimulacionEvento.RegistrarEvento( 
+                    GestorSimulacion.idSimulacionActual,
+                    "Hielo derretido", 
+                    "El hielo ha desaparecido visualmente", 
+                    (int)Time.time)
+                ;
+
                 hielo.transform.localScale = Vector3.zero;
                 hielo.SetActive(false);
 
@@ -98,10 +106,10 @@ public class ControlFusion : MonoBehaviour
 
                 int duracionReal = (int)(Time.time - tiempoInicioSimulacion);
 
-                    GestorSimulacionFinalizar.FinalizarSimulacion(
-                    GestorSimulacion.idSimulacionActual,
-                    duracionReal
-                );
+                GestorSimulacionFinalizar.FinalizarSimulacion(
+                GestorSimulacion.idSimulacionActual,
+                duracionReal
+            );
 
                 if (textoUI != null)
                 {
@@ -142,14 +150,14 @@ public class ControlFusion : MonoBehaviour
 
     public void RecibirHielo()
     {
-        
-        if (GestorSimulacion.idSimulacionActual != -1)
+
+        if (GestorSimulacion.idSimulacionActual != -1 || peticionEnCurso)
         {
-            Debug.Log("La simulación ya está activa (ID: " + GestorSimulacion.idSimulacionActual + "). No se creará otro registro.");
+            Debug.Log("Petición de inicio ya está en curso o ya existe un ID.");
             return;
         }
 
-        
+        peticionEnCurso = true;
         hayHieloEnOlla = true;
 
         if (hielo != null)
@@ -167,16 +175,23 @@ public class ControlFusion : MonoBehaviour
         if (textoUI != null)
             textoUI.text = "Temperatura: 0 °C";
 
-        
+
         tiempoInicioSimulacion = Time.time;
 
-        
+
         GestorSimulacion.IniciarSimulacion(
             SesionUsuario.IdUsuario,
             "Fusion del hielo",
             "Proceso de cambio de estado solido a liquido",
             "VR"
         );
+
+        GestorSimulacionEvento.RegistrarEvento(
+            GestorSimulacion.idSimulacionActual,
+            "Hielo colocado", 
+            "El usuario puso el hielo en la olla",
+            (int)Time.time)
+        ;
 
         Debug.Log("Enviando petición de inicio para el Usuario ID: " + SesionUsuario.IdUsuario);
     }
@@ -191,13 +206,6 @@ public class ControlFusion : MonoBehaviour
         if (luzEstufa != null)
             luzEstufa.enabled = estufaEncendida;
 
-        GestorSimulacionEvento.RegistrarEvento(
-            GestorSimulacion.idSimulacionActual,
-            estufaEncendida ? "Estufa encendida" : "Estufa apagada",
-            "El usuario interactuo con la estufa",
-            (int)Time.time
-        );
-
         Debug.Log("Estufa: " + (estufaEncendida ? "ENCENDIDA" : "APAGADA"));
     }
 
@@ -208,6 +216,14 @@ public class ControlFusion : MonoBehaviour
     // ----------------------------------------------------
     public void ResetProceso()
     {
+        GestorSimulacionEvento.RegistrarEvento(
+            GestorSimulacion.idSimulacionActual, 
+            "Reinicio", 
+            "El usuario reinicio la practica", 
+            (int)Time.time)
+        ;
+
+        peticionEnCurso = false;
         hayHieloEnOlla = false;
         estufaEncendida = false;
         transicionHieloAguaCompleta = false;

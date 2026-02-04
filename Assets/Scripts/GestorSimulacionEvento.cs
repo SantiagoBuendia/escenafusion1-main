@@ -32,13 +32,13 @@ public static class GestorSimulacionEvento
     {
         WWWForm form = new WWWForm();
         form.AddField("accion", "registrarEvento");
-        form.AddField("simulacion_id", simulacionId); // Coincide con el CGI
+        form.AddField("simulacion_id", simulacionId); 
         form.AddField("evento", evento);
         form.AddField("detalle", detalle);
-        form.AddField("tiempo", tiempo); // Coincide con el CGI (tiempo_segundos)
+        form.AddField("tiempo", tiempo); 
 
         UnityWebRequest www =
-            UnityWebRequest.Post("http://localhost/cgi-bin/PaginaWebLaboratorio.exe", form);
+            UnityWebRequest.Post(ApiConfig.BASE_URL, form);
 
         yield return www.SendWebRequest();
 
